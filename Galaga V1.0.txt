@@ -1,0 +1,582 @@
+#include<stdio.h>
+#include<malloc.h>
+#define MAXSIZE 9
+
+   char PLAYER = '^';
+   char ENEMY = 'V';
+   char FRIENDLYSHOT = '.';
+   char ENEMYSHOT = 'o';
+   char EMPTY = ' ';
+   char DEAD = '*';
+   int bulletnum = 0;
+   int count = 0;
+
+
+   void fillarraynodes();
+   void displayarray();
+   void linkarray();
+   void populate();
+   void levelcountarray();
+   int command();
+   void vertsearch(char);
+   int horizonsearch(char);
+   void FriendlyBulletTracker();
+   void shoot();
+   void moveLeft();
+   void moveRight();
+   void moveUp();
+   void moveDown();
+   void FbulletUpdate(char);
+
+   struct Node{
+      char field;
+      struct Node* down;
+      struct Node* up;
+      struct Node* right;
+      struct Node* left;
+   }*horizontal0[MAXSIZE], *h1[MAXSIZE], *h2[MAXSIZE], *h3[MAXSIZE], *h4[MAXSIZE], *h5[MAXSIZE], *h6[MAXSIZE],*h7[MAXSIZE], *h8[MAXSIZE], *level[MAXSIZE];
+
+
+   int main(void){                  //MAIN FUNCTION believe it or not
+      fillarraynodes();
+      linkarray();
+      populate();
+      command();
+      return 0;
+   }
+
+   int command(){
+      char input;
+      int index;
+      while(1){
+         displayarray();
+      //clearRIP();   
+         input = EMPTY;  
+         scanf(" %c", &input);
+      
+         
+         switch(input){
+         
+            case 'A': case 'a':  //left
+               {
+                  if(bulletnum > 0)
+                  {
+                     FriendlyBulletTracker();
+                  }
+               
+                  moveLeft();
+               
+                  break;
+               }
+            case 'D': case 'd':   //right
+               {
+                  if(bulletnum > 0)
+                  {
+                     FriendlyBulletTracker();
+                  }
+               
+                  moveRight();
+               
+                  break;
+               }
+            case 'W': case 'w':  //up
+               {
+                  if(bulletnum > 0)
+                  {
+                     FriendlyBulletTracker();
+                  }
+               
+                  moveUp();
+               
+                  break;
+               }
+            case 'S': case 's': //down
+               {
+                  if(bulletnum > 0)
+                  {
+                     FriendlyBulletTracker();
+                  }
+               
+                  moveDown();
+               
+                  break;
+               }
+            case 'X': case 'x': //exit program
+               {
+                  return 0;
+               }
+            case 'B': case 'b': //shoot
+               {
+                  if(bulletnum > 0)
+                  {
+                     FriendlyBulletTracker();
+                  }
+               
+                  shoot();
+                  bulletnum++;
+                  break;
+               }           
+            default:
+               {
+                  printf("NOT A VALID COMMAND\n");
+                  break;
+               }
+         
+         }
+            
+      }
+   }
+
+
+   struct Node *CreateNewNode(){
+   
+      struct Node *newNode = (struct Node*)malloc(sizeof(struct Node));
+      newNode->up = NULL;
+      newNode->down = NULL;
+      newNode->left = NULL;
+      newNode->right = NULL; 
+      newNode->field = ' ';
+      return newNode;
+   }
+   
+   void fillarraynodes(){
+   
+      int i;
+   
+      for(i = 0; i < MAXSIZE; i++)
+      {
+         horizontal0[i] = CreateNewNode();
+      
+         h1[i] = CreateNewNode();
+      
+         h2[i] = CreateNewNode();
+      
+         h3[i] = CreateNewNode();
+      
+         h4[i] = CreateNewNode();
+      
+         h5[i] = CreateNewNode();
+      
+         h6[i] = CreateNewNode();
+      
+         h7[i] = CreateNewNode();
+      
+         h8[i] = CreateNewNode();
+      }
+   } 
+
+   void displayarray(){
+      int i;
+   
+      for(i = 0; i < MAXSIZE; i++)
+      {  
+         printf("%c  ",horizontal0[i]->field);
+      
+      
+      }
+      printf("\n");
+      for(i = 0; i < MAXSIZE; i++)
+      {  
+         printf("%c  ",h1[i]->field);
+      }
+     
+   
+   
+      printf("\n");
+      for(i = 0; i < MAXSIZE; i++)
+      {
+         printf("%c  ",h2[i]->field);
+      
+      }
+      printf("\n");
+      for(i = 0; i < MAXSIZE; i++)
+      {
+         printf("%c  ",h3[i]->field);
+      
+      }
+      printf("\n");
+      for(i = 0; i < MAXSIZE; i++)
+      {
+         printf("%c  ",h4[i]->field);
+      
+      }
+      printf("\n");
+      for(i = 0; i < MAXSIZE; i++)
+      {
+         printf("%c  ",h5[i]->field);
+      
+      }
+      printf("\n");
+      for(i = 0; i < MAXSIZE; i++)
+      {
+         printf("%c  ",h6[i]->field);
+      
+      }
+      printf("\n");
+      for(i = 0; i < MAXSIZE; i++)
+      {
+         printf("%c  ",h7[i]->field);
+      
+      }
+      printf("\n");
+      for(i = 0; i < MAXSIZE; i++)
+      {
+         printf("%c  ",h8[i]->field);
+      
+      }
+      printf("\n");
+      printf("A = Left  || D = Right\n");
+      printf("W = Up    || S = Down\n");
+      printf("B = Shoot\n");
+   
+   }
+
+   void linkarray(){                                      //converts arrays into linked lists
+      int i;
+      for(i = 0; i < MAXSIZE; i++){
+      
+      //This is the top array, initially filled with enemy fields
+      
+         horizontal0[i]->down = h1[i];                         //down    
+         if(i < MAXSIZE){
+            horizontal0[i]->right = horizontal0[i+1];          //right
+         }
+         if(i >= 0){
+            horizontal0[i]->left = horizontal0[i-1];           //left
+         }
+      
+      //This is the first middle ground
+      
+      
+         h1[i]->up = horizontal0[i];               //up
+           
+         h1[i]->down = h2[i];                      //down
+      
+         if(i < MAXSIZE){                          //right
+            h1[i]->right = h1[i+1];
+         }
+         if(i >= 0){                               //left
+            h1[i]->left = h1[i-1];
+         }
+      
+      //This is the second middle ground
+      
+         h2[i]->up = h1[i];                     //up
+      
+         h2[i]->down = h3[i];                   //down
+      
+         if(i < MAXSIZE){
+            h2[i]->right = h2[i+1];             //right
+         }
+      
+         if(i >= 0){
+            h2[i]->left = h2[i-1];              //left
+         }
+      
+      //This is the third middle ground
+      
+      
+         h3[i]->up = h2[i];                     //up
+              
+         h3[i]->down = h4[i];                   //down
+      
+         if(i < MAXSIZE){
+            h3[i]->right = h3[i+1];             //right
+         }
+         if(i >= 0){
+            h3[i]->left = h3[i-1];              //left
+         }
+      
+      //This is the fourth middle ground
+      
+      
+         h4[i]->up = h3[i];                     //up
+              
+         h4[i]->down = h5[i];                   //down
+      
+         if(i < MAXSIZE){
+            h4[i]->right = h4[i+1];             //right
+         }
+         if(i >= 0){
+            h4[i]->left = h4[i-1];              //left
+         }
+      
+      //This is the fifth middle ground
+      
+      
+         h5[i]->up = h4[i];                     //up
+              
+         h5[i]->down = h6[i];                   //down
+      
+         if(i < MAXSIZE){
+            h5[i]->right = h5[i+1];             //right
+         }
+         if(i >= 0){
+            h5[i]->left = h5[i-1];              //left
+         }
+      //This is the sixth middle ground
+      
+      
+         h6[i]->up = h5[i];                     //up
+              
+         h6[i]->down = h7[i];                   //down
+      
+         if(i < MAXSIZE){
+            h6[i]->right = h6[i+1];             //right
+         }
+         if(i >= 0){
+            h6[i]->left = h6[i-1];              //left
+         }
+      
+      //This is the seventh middle ground
+      
+      
+         h7[i]->up = h6[i];                     //up
+              
+         h7[i]->down = h8[i];                   //down
+      
+         if(i < MAXSIZE){
+            h7[i]->right = h7[i+1];             //right
+         }
+         if(i >= 0){
+            h7[i]->left = h7[i-1];               //left
+         }
+      
+      //This is the bottom array, starting point of friendly field
+      
+         h8[i]->up = h7[i];                     //up   
+         if(i < MAXSIZE){
+            h8[i]->right = h8[i+1];              //right
+         }
+         if(i >= 0){
+            h8[i]->left = h8[i-1];               //left
+         }
+      
+      }
+      
+   }
+
+   void populate(){
+      int i;
+   
+   //populate enemy area   
+      for(i = 0; i < MAXSIZE; i=i+2){
+         horizontal0[i]->field = ENEMY;
+      }
+   
+   //friendlyarea
+      h8[MAXSIZE/2]->field = PLAYER;
+   } 
+
+
+   int horizonsearch(char searchValue){
+   
+      int i;
+   
+      for(i = 0; i < MAXSIZE; i++){
+         if(horizontal0[i]->field == searchValue)
+         {
+            return i; 
+         }
+         if(h1[i]->field == searchValue)
+         {
+            return i;
+         }
+         if(h2[i]->field == searchValue)
+         {
+         
+            return i;
+         } 
+         if(h3[i]->field == searchValue)
+         {
+            return i; 
+         }
+         if(h4[i]->field == searchValue)
+         {
+            return i;
+         }
+         if(h5[i]->field == searchValue)
+         {
+         
+            return i;
+         } 
+         if(h6[i]->field == searchValue)
+         {
+            return i;
+         }
+         if(h7[i]->field == searchValue)
+         {
+         
+            return i;
+         } 
+         if(h8[i]->field == searchValue)
+         {
+         
+            return i;
+         }
+      
+      }
+   }
+
+   void vertsearch(char searchValue){
+      int i = horizonsearch(searchValue);
+      if(horizontal0[i]->field == searchValue)
+      {
+         level[i] = horizontal0[i];
+      }
+      if(h1[i]->field == searchValue)
+      {
+         level[i] = h1[i];       
+      }
+      if(h2[i]->field == searchValue)
+      {
+         level[i] = h2[i];
+      } 
+      if(h3[i]->field == searchValue)
+      {
+         level[i] = h3[i];       
+      }
+      if(h4[i]->field == searchValue)
+      {
+         level[i] = h4[i];
+      } 
+      if(h5[i]->field == searchValue)
+      {
+         level[i] = h5[i];
+      }
+      if(h6[i]->field == searchValue)
+      {
+         level[i] = h6[i];
+      } 
+      if(h7[i]->field == searchValue)
+      {
+         level[i] = h7[i];
+      }
+   
+      if(h8[i]->field == searchValue)
+      {
+         level[i] = h8[i];
+      }
+   
+   }
+
+
+   void FriendlyBulletTracker(){                          //FIXME
+      
+      while(count < MAXSIZE){
+      
+         FbulletUpdate(FRIENDLYSHOT);
+         count++;
+            
+      }count = 0;     
+   }
+
+   void shoot(){
+      vertsearch(PLAYER);
+      int index = horizonsearch(PLAYER);
+   
+      level[index]->up->field = FRIENDLYSHOT;
+   }
+
+   void moveLeft(){
+      int index = horizonsearch(PLAYER);
+      vertsearch(PLAYER);
+      if(level[index]->left == NULL){
+         printf("Move is out of bounds\n\n");
+      }  
+      else{
+         level[index]->left->field = PLAYER;
+         level[index]->field = EMPTY;
+      }
+   }
+
+   void moveRight(){
+      int index = horizonsearch(PLAYER);
+      vertsearch(PLAYER);
+      if(level[index]->right == NULL){
+         printf("Move is out of bounds\n\n");
+      }
+      else{
+         level[index]->right->field = PLAYER;
+         level[index]->field = EMPTY;
+      }
+   }
+
+   void moveUp(){
+      int index = horizonsearch(PLAYER);
+      vertsearch(PLAYER);
+      if(level[index]->up == NULL){
+         printf("Move is out of bounds\n\n");
+      }
+      else{
+         level[index]->up->field = PLAYER;
+         level[index]->field = EMPTY;
+      }
+   }
+
+
+   void moveDown(){
+      int index = horizonsearch(PLAYER);
+      vertsearch(PLAYER);
+      if(level[index]->down == NULL){
+         printf("Move is out of bounds\n\n");
+      }
+      else{
+         level[index]->down->field = PLAYER;
+         level[index]->field = EMPTY;
+      }
+   }
+
+   void FbulletUpdate(char searchValue){
+      if(horizontal0[count]->field == searchValue)
+      {
+         horizontal0[count]->field = EMPTY;
+      }
+      if(h1[count]->field == searchValue)
+      {
+         if(horizontal0[count]->field == EMPTY)
+            {
+               h1[count]->field = EMPTY;
+            }
+         else{
+         horizontal0[count]->field = DEAD;
+         h1[count]->field = EMPTY;  
+         }    
+      }
+      if(h2[count]->field == searchValue)
+      {
+         h1[count]->field = FRIENDLYSHOT;
+         h2[count]->field = EMPTY;
+      } 
+      if(h3[count]->field == searchValue)
+      {
+         h2[count]->field = FRIENDLYSHOT;
+         h3[count]->field = EMPTY;      
+      }
+      if(h4[count]->field == searchValue)
+      {
+         h3[count]->field = FRIENDLYSHOT;
+         h4[count]->field = EMPTY;
+      }
+      if(h5[count]->field == searchValue)
+      {
+         h4[count]->field = FRIENDLYSHOT;
+         h5[count]->field = EMPTY;      
+      }
+      if(h6[count]->field == searchValue)
+      {
+         h5[count]->field = FRIENDLYSHOT;
+         h6[count]->field = EMPTY;
+      }
+      if(h7[count]->field == searchValue)
+      {
+         h6[count]->field = FRIENDLYSHOT;
+         h7[count]->field = EMPTY;
+      }
+      if(h8[count]->field == searchValue)
+      {
+         h7[count]->field = FRIENDLYSHOT;
+         h8[count]->field = EMPTY;
+      }
+   
+   }
